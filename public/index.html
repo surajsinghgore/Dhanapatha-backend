@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stripe Payment</title>
+  <script src="https://js.stripe.com/v3/"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Stripe Payment</h1>
+  <form id="payment-form" autocomplete="off"> <!-- Disable autocomplete -->
+    <label for="amount">Amount (in INR):</label>
+    <input type="number" id="amount" name="amount" min="1" required placeholder="Enter amount" />
+    
+    <div id="card-element">
+      <!-- Stripe.js will inject card input elements here -->
+    </div>
+    <button id="submit">Pay</button>
+    <div id="payment-message" class="hidden"></div>
+  </form>
+
+  <script type="module">
+    const stripe = Stripe('pk_test_51Q0h36Ru6GkJxypiKWTVhEfFFn6QbWP7PpM0gHwpgL9JVcgUi6UrHW6cxdjZOVblRSC56Xy5GwlcPHHZ6T6ILFPS00SpAxYfBb'); // Replace with your actual Stripe Publishable Key
+
+    const authToken = 'your_bearer_token'; // Replace with the actual Bearer token
+
+    const elements = stripe.elements();
+    const cardElement = elements.create('card');
+    cardElement.mount('#card-element');
+
+    const form = document.getElementById('payment-form');
+    let clientSecret;
+
+    const fetchPaymentIntent = async (amount) => {
+      const response = await fetch('/api/v1/stripe/create-payment-intent', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ amount }) 
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error);
+      }
+
+      const data = await response.json();
+      return data.clientSecret;
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const amountInput = document.getElementById('amount');
+      const amount = amountInput.value; // Get the amount from the input field
+
+      try {
+        clientSecret = await fetchPaymentIntent(amount); // Fetch client secret based on user input
+
+        const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: {
+            card: cardElement,
+          }
+        });
+
+        const paymentStatus = error ? 'failed' : paymentIntent.status;
+
+        // Record the payment in the database
+        await fetch('/api/v1/stripe/add-money', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}` 
+          },
+          body: JSON.stringify({
+            amount: paymentIntent ? paymentIntent.amount / 100 : amount, // Convert amount
+            transactionId: paymentIntent ? paymentIntent.id : null, // Stripe's Payment Intent ID
+            paymentMethod: 'card', // Payment method (card)
+            status: paymentStatus // Status (succeeded or failed)
+          })
+        });
+
+        if (paymentStatus === 'succeeded') {
+          document.getElementById('payment-message').textContent = 'Payment successful!';
+        } else {
+          document.getElementById('payment-message').textContent = error.message || 'Payment failed!';
+        }
+        document.getElementById('payment-message').classList.remove('hidden');
+      } catch (error) {
+        document.getElementById('payment-message').textContent = error.message;
+        document.getElementById('payment-message').classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

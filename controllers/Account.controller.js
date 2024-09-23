@@ -1,7 +1,4 @@
-import { checkStripeCustomerByEmail, StripeBalanceFetch } from "../handlers/StripeHandler.js";
 import { User } from "../models/User.model.js";
-import Stripe from "stripe";
-const stripe = new Stripe(process.env.stipe_secret_key);
 
 
 
