@@ -10,8 +10,20 @@ const RefundSchema = new Schema({
         type: Number, 
         required: true
     },
-    stripeRefundId: { 
+    refundTransaction: { 
         type: String, 
+        unique: true
+    },
+    senderReceived: { 
+        type: Number, 
+        required: true 
+    },
+    receiverReceived: { 
+        type: Number, 
+        required: true 
+    },
+    adminReceived: { 
+        type: Number, 
         required: true 
     },
     createdAt: { 
@@ -20,5 +32,11 @@ const RefundSchema = new Schema({
     }
 });
 
-// Exporting the Refund model
+RefundSchema.pre('save', function(next) {
+    if (!this.refundTransaction) {
+        this.refundTransaction = new mongoose.Types.ObjectId().toString();  
+    }
+    next();
+});
+
 export const Refund = mongoose.model("Refund", RefundSchema);

@@ -20,11 +20,13 @@ app.get("/", (req, res) => {
 import userRouter from "./routes/User.router.js";
 import accountRouter from "./routes/Account.router.js";
 import stripeRouter from "./routes/Stripe.router.js";
+import refundRouter from "./routes/Refund.router.js";
 
 
 // Routes declaration
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/account", accountRouter);
 app.use("/api/v1/stripe", stripeRouter);
+app.use("/api/v1/refund", refundRouter);
 
 export { app };
