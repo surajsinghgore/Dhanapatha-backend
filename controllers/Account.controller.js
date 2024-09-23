@@ -1,5 +1,6 @@
 import { User } from "../models/User.model.js";
 import {Transaction} from "../models/Transaction.model.js"
+import AddMoney from "../models/AddMoney.model.js"
 
 
 
@@ -122,3 +123,56 @@ export const transferMoney = async (req, res) => {
   }
 };
 
+
+
+
+export const fetchTransactions = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+
+    const transactions = await Transaction.find({
+      $or: [
+        { senderId: userId },
+        { receiverId: userId }
+      ]
+    })
+    .sort({ createdAt: -1 })
+    .populate('receiverId', 'username email')
+    .exec();
+
+
+    const addMoneyTransactions = await AddMoney.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .exec();
+
+
+    const formattedTransactions = transactions.map(transaction => ({
+      transactionId: transaction.transactionId,
+      amount: transaction.amount,
+      type: 'Transfer', 
+      receiver: transaction.receiverId, 
+      status: transaction.status,
+      createdAt: transaction.createdAt
+    }));
+
+    const formattedAddMoneyTransactions = addMoneyTransactions.map(addMoney => ({
+      transactionId: addMoney.transactionId,
+      amount: addMoney.amount,
+      type: 'Add Money',
+      status: addMoney.status,
+      createdAt: addMoney.createdAt
+    }));
+
+
+    const allTransactions = [...formattedTransactions, ...formattedAddMoneyTransactions];
+
+  
+    allTransactions.sort((a, b) => b.createdAt - a.createdAt);
+
+    res.status(200).json({ success: true, transactions: allTransactions });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
