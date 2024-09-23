@@ -10,23 +10,23 @@ export const addAccount = async (req, res) => {
     const { accountNumber } = req.body;
 
     if (!accountNumber || !_id) {
-      return res.status(400).json({ message: "Account number and User ID are required" });
+      return res.status(400).json({status:false, message: "Account number and User ID are required" });
     }
 
     if (!/^\d{16}$/.test(accountNumber)) {
-      return res.status(400).json({ message: "Account number must be a 16-digit number" });
+      return res.status(400).json({status:false, message: "Account number must be a 16-digit number" });
     }
 
     const existingAccount = await User.findOne({ accountNumber });
 
     if (existingAccount && !existingAccount._id.equals(_id)) {
       console.log(existingAccount._id.toString(),_id)
-      return res.status(400).json({ message: "Account number is already registered with another user" });
+      return res.status(400).json({ status:false,message: "Account number is already registered with another user" });
     }
 
     const user = await User.findById(_id);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ status:false,message: "User not found" });
     }
 
     if (user.accountNumber === accountNumber) {
@@ -55,7 +55,53 @@ export const addAccount = async (req, res) => {
 
 
 
+export const updateAccount = async (req, res) => {
+  try {
+    const { _id } = req.user;
+    const { newAccountNumber } = req.body; 
 
+    if (!newAccountNumber || !_id) {
+      return res.status(400).json({ status:false,message: "New account number and User ID are required" });
+    }
+
+    if (!/^\d{16}$/.test(newAccountNumber)) {
+      return res.status(400).json({ status:false,message: "Account number must be a 16-digit number" });
+    }
+
+    const existingAccount = await User.findOne({ accountNumber: newAccountNumber });
+
+    if (existingAccount && !existingAccount._id.equals(_id)) {
+      return res.status(400).json({status:false, message: "Account number is already registered with another user" });
+    }
+
+    const user = await User.findById(_id);
+    if (!user) {
+      return res.status(404).json({status:false, message: "User not found" });
+    }
+
+ 
+    if (user.accountNumber === newAccountNumber) {
+      return res.status(200).json({
+        success: true,
+        message: "This account number is already associated with your account",
+        accountNumber: newAccountNumber,
+      });
+    }
+
+
+    user.accountNumber = newAccountNumber;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Account number updated successfully",
+      accountNumber: newAccountNumber,
+    });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 
 
