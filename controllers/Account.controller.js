@@ -188,7 +188,7 @@ export const fetchTransactions = async (req, res) => {
     .exec();
 
 
-    const addMoneyTransactions = await AddMoney.find({ user: userId })
+    const addMoneyTransactions = await AddMoney.find({  userId })
       .sort({ createdAt: -1 })
       .exec();
 

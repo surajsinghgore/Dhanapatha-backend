@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 const AddMoneySchema = new Schema({
-  user: { 
+  userId: { 
     type: Schema.Types.ObjectId, 
     ref: 'User', 
     required: true 
