@@ -15,9 +15,11 @@ app.get("/", (req, res) => {
 
 // Routes import
 import userRouter from "./routes/User.router.js";
+import accountRouter from "./routes/Account.router.js";
 
 
 // Routes declaration
 app.use("/api/v1/user", userRouter);
+app.use("/api/v1/stripe", accountRouter);
 
 export { app };

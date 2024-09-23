@@ -3,7 +3,7 @@ import {  loginUser, RegisterUser } from "../controllers/User.controller.js";
 import { registerValidation } from "../validators/validation.js";
 import { validationResult } from 'express-validator';
 
-// Register
+
 const router = Router();
 
 

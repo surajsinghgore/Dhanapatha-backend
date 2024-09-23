@@ -5,8 +5,17 @@ const UserSchema = new Schema({
     username: { type: String, required: true, unique: true, index: true },
     email: { type: String, required: true, unique: true, index: true },
     password: { type: String, required: true },
-    stripeAccountId: { type: String, unique: true },
-    stripeEmailAccountId: { type: String, unique: true },
+    accountNumber: { 
+        type: String, 
+        unique: true, 
+        sparse: true, 
+        validate: {
+            validator: function(v) {
+                return /^\d{16}$/.test(v);
+            },
+            message: props => `${props.value} is not a valid 16-digit account number!`
+        }
+    },
     balance: { type: Number, default: 0 },
     createdAt: { type: Date, default: Date.now }
 });
