@@ -3,6 +3,7 @@ import AddMoney from "../models/AddMoney.model.js";
 import { User } from "../models/User.model.js";
 
 import Stripe from "stripe";
+import { Withdrawal } from "../models/Withdrawal.model.js";
 const stripe = new Stripe(process.env.stipe_secret_key);
 
 
@@ -61,5 +62,132 @@ export const addMoney = async (req, res) => {
   }
 };
 
+export const withdrawMoney = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid amount" });
+    }
+
+    // Fetch the user to check the balance
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Check if the user has sufficient balance
+    if (user.balance < amount) {
+      return res.status(400).json({ success: false, message: "Insufficient balance" });
+    }
+
+    // Mock bank account details
+    const bankAccountDetails = {
+      accountHolderName: "John Doe",
+      accountNumber: "123456789",
+      routingNumber: "987654321",
+      bankName: "Mock Bank",
+      accountType: "checking"
+    };
+
+    // Deduct the amount from the user's balance
+    user.balance -= amount;
+    await user.save();
+
+    // Create a withdrawal record
+    const withdrawal = new Withdrawal({
+      userId,
+      amount,
+      bankAccountDetails,
+      status: 'completed' // Assuming it's successful for mock
+    });
+
+    await withdrawal.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Withdrawal processed successfully",
+      withdrawal
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
 
 
+
+
+// bankAccountDetails: {
+//   accountHolderName,
+//   accountNumber,
+//   routingNumber,        IFSC
+//   bankName,
+//   accountType   checking, savings, business
+// } 
+
+
+// const stripe = new Stripe('your_stripe_secret_key'); // Replace with your Stripe secret key
+
+// export const withdrawMoney = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+//     const { amount } = req.body; // Get the withdrawal amount from the request
+
+//     if (!amount || amount <= 0) {
+//       return res.status(400).json({ success: false, message: "Invalid amount" });
+//     }
+
+//     // Fetch the user to check the balance and bank account details
+//     const user = await User.findById(userId);
+//     if (!user) {
+//       return res.status(404).json({ success: false, message: "User not found" });
+//     }
+
+//     // Check if the user has sufficient balance
+//     if (user.balance < amount) {
+//       return res.status(400).json({ success: false, message: "Insufficient balance" });
+//     }
+
+//     // Deduct the amount from the user's balance
+//     user.balance -= amount;
+//     await user.save();
+
+//     // Create a payout using Stripe
+//     const payout = await stripe.payouts.create({
+//       amount: amount * 100, // Amount in cents
+//       currency: 'usd', // Change to your desired currency
+//       destination: user.stripeAccountId, // The Stripe account ID of the user
+//       // Optionally, you can add metadata or description
+//     });
+
+//     // Create a withdrawal record
+//     const withdrawal = new Withdrawal({
+//       userId,
+//       amount,
+//       bankAccountDetails: {
+//         accountHolderName: user.accountHolderName,
+//         accountNumber: user.accountNumber,
+//         routingNumber: user.routingNumber,
+//         bankName: user.bankName,
+//         accountType: user.accountType
+//       }, // Assuming these fields exist in the User model
+//       status: 'completed' // Update this based on Stripe's response
+//     });
+
+//     await withdrawal.save();
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Withdrawal processed successfully",
+//       payout, // Return payout details if needed
+//       withdrawal
+//     });
+
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+//   }
+// };

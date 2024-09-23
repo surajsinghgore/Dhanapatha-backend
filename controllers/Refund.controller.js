@@ -82,26 +82,21 @@ export const getUserHistory = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Check if the user exists
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Fetch transactions where the user is the sender or receiver
     const transactions = await Transaction.find({
       $or: [{ senderId: userId }, { receiverId: userId }]
     }).sort({ createdAt: -1 }).lean();
 
-    // Fetch refunds related to the user's transactions
     const refunds = await Refund.find({
       transactionId: { $in: transactions.map(tx => tx._id) }
     }).sort({ createdAt: -1 }).lean();
 
-    // Fetch add money records related to the user
     const addMoneyRecords = await AddMoney.find({ userId }).sort({ createdAt: -1 }).lean();
 
-    // Combine results into a single history array
     const history = [];
 
     transactions.forEach(transaction => {
@@ -126,7 +121,6 @@ export const getUserHistory = async (req, res) => {
         createdAt: refund.createdAt,
       });
     });
-console.log(addMoneyRecords)
     addMoneyRecords.forEach(record => {
       history.push({
         type: 'addMoney',
@@ -135,7 +129,6 @@ console.log(addMoneyRecords)
       });
     });
 
-    // Sort the combined history by createdAt in descending order
     history.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     res.status(200).json({ success: true, history });
