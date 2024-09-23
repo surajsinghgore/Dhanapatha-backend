@@ -1,5 +1,5 @@
 import { User } from "../models/User.model.js";
-
+import {Transaction} from "../models/Transaction.model.js"
 
 
 
@@ -76,3 +76,49 @@ return res.status(200).json({ success: true, data:balance });
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+
+export const transferMoney = async (req, res) => {
+  try {
+    const { receiverEmail, amount } = req.body;
+    const senderId = req.user._id;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'Amount must be a positive number' });
+    }
+    if (!receiverEmail) {
+      return res.status(400).json({ success: false, message: 'Please provide receiver email id' });
+    }
+
+    const sender = await User.findById(senderId);
+    const receiver = await User.findOne({ email: receiverEmail });
+
+    if (!receiver) {
+      return res.status(404).json({ success: false, message: 'Receiver not found' });
+    }
+
+    if (!sender) {
+      return res.status(404).json({ success: false, message: 'Sender not found' });
+    }
+
+    if (sender.balance < amount) {
+      return res.status(400).json({ success: false, message: 'Insufficient balance' });
+    }
+
+    const transaction = await Transaction.create({
+      senderId: sender._id,
+      receiverId: receiver._id,
+      amount,
+    });
+
+    await sender.deductBalance(amount);
+    await receiver.incrementBalance(amount);
+
+    res.status(200).json({ success: true, message: 'Transfer successful', transaction, status: transaction.status });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+

@@ -5,6 +5,9 @@ import { User } from "../models/User.model.js";
 import Stripe from "stripe";
 const stripe = new Stripe(process.env.stipe_secret_key);
 
+
+
+
 export const createPaymentIntent = async (req, res) => {
   try {
     const { amount } = req.body;
@@ -57,3 +60,6 @@ export const addMoney = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+

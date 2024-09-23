@@ -31,4 +31,18 @@ UserSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password);
 };
 
+// Method to deduct balance
+UserSchema.methods.deductBalance = async function(amount) {
+    if (this.balance < amount) {
+      throw new Error('Insufficient balance');
+    }
+    this.balance -= amount;
+    await this.save();
+  };
+  
+  // Method to increment balance
+  UserSchema.methods.incrementBalance = async function(amount) {
+    this.balance += amount;
+    await this.save();
+  };
 export const User = mongoose.model("User", UserSchema);
