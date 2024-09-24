@@ -13,7 +13,7 @@ const WithdrawalSchema = new Schema({
   bankAccountDetails: {
     accountHolderName: { type: String, required: true },
     accountNumber: { type: String, required: true },
-    routingNumber: { type: String, required: true },
+    ifscCode: { type: String, required: true },
     bankName: { type: String, required: true },
     accountType: { type: String, required: true }
   },

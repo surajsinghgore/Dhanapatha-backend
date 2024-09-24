@@ -71,40 +71,42 @@ export const withdrawMoney = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid amount" });
     }
 
-    // Fetch the user to check the balance
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Check if the user has sufficient balance
+
     if (user.balance < amount) {
       return res.status(400).json({ success: false, message: "Insufficient balance" });
     }
 
-    // Mock bank account details
-    const bankAccountDetails = {
-      accountHolderName: "John Doe",
-      accountNumber: "123456789",
-      routingNumber: "987654321",
-      bankName: "Mock Bank",
-      accountType: "checking"
-    };
+    const { bankAccountDetails } = user;
+    if (!bankAccountDetails || !bankAccountDetails.accountNumber) {
+      return res.status(400).json({ success: false, message: "No bank account details found" });
+    }
 
-    // Deduct the amount from the user's balance
-    user.balance -= amount;
-    await user.save();
-
-    // Create a withdrawal record
-    const withdrawal = new Withdrawal({
+    const withdrawalDetails = {
       userId,
       amount,
-      bankAccountDetails,
-      status: 'completed' // Assuming it's successful for mock
-    });
+      bankAccountDetails: {
+        accountHolderName: bankAccountDetails.accountHolderName,
+        accountNumber: bankAccountDetails.accountNumber,
+        ifscCode: bankAccountDetails.ifscCode,
+        bankName: bankAccountDetails.bankName,
+        accountType: bankAccountDetails.accountType
+      },
+      status: 'completed' 
+    };
 
+
+
+
+
+    const withdrawal = new Withdrawal(withdrawalDetails);
     await withdrawal.save();
-
+    user.balance -= amount;
+    await user.save();
     res.status(200).json({
       success: true,
       message: "Withdrawal processed successfully",
@@ -116,8 +118,6 @@ export const withdrawMoney = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
-
-
 
 
 // bankAccountDetails: {
