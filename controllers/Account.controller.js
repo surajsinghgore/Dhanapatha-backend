@@ -12,43 +12,41 @@ export const addAccount = async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ status:false, message: "User not found" });
     }
 
-    // Check if the user already has the same bank account details
     if (
       user.bankAccountDetails &&
       user.bankAccountDetails.accountNumber === accountNumber &&
       user.bankAccountDetails.ifscCode === ifscCode
     ) {
-      return res.status(400).json({ message: "You have already added this account." });
+      return res.status(400).json({  status:false,message: "You have already added this account." });
     }
 
-    // Check if the combination of accountNumber and ifscCode exists for another user
     const existingUser = await User.findOne({ 
       "bankAccountDetails.accountNumber": accountNumber, 
       "bankAccountDetails.ifscCode": ifscCode 
     });
 
     if (existingUser) {
-      return res.status(400).json({ message: "This combination of account number and IFSC code already exists for another user." });
+      return res.status(400).json({  status:false,message: "This combination of account number and IFSC code already exists for another user." });
     }
 
     if (user.bankAccountDetails && user.bankAccountDetails.accountNumber) {
-      return res.status(400).json({ message: "Bank account already exists. You cannot add another." });
+      return res.status(400).json({ status:false, message: "Bank account already exists. You cannot add another." });
     }
 
     const accountNumberRegex = /^\d{9,18}$/;
     const ifscCodeRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/; 
 
     if (!accountNumberRegex.test(accountNumber)) {
-      return res.status(400).json({ message: "Invalid account number. Must be between 9 and 18 digits." });
+      return res.status(400).json({  status:false,message: "Invalid account number. Must be between 9 and 18 digits." });
     }
     if (!ifscCodeRegex.test(ifscCode)) { 
-      return res.status(400).json({ message: "Invalid IFSC code. Must follow the format 'ABCD0000123'." });
+      return res.status(400).json({  status:false,message: "Invalid IFSC code. Must follow the format 'ABCD0000123'." });
     }
     if (!["checking", "savings", "business"].includes(accountType)) {
-      return res.status(400).json({ message: "Invalid account type. Must be 'checking', 'savings', or 'business'." });
+      return res.status(400).json({  status:false,message: "Invalid account type. Must be 'checking', 'savings', or 'business'." });
     }
 
     // Save bank account details
@@ -62,11 +60,11 @@ export const addAccount = async (req, res) => {
 
     await user.save();
 
-    return res.status(200).json({ message: "Bank details added successfully", user });
+    return res.status(200).json({  status:true,message: "Bank details added successfully", user });
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({  status:false,message: "Internal server error" });
   }
 };
 
@@ -79,24 +77,24 @@ export const updateAccount = async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({status:false, message: "User not found" });
     }
 
     if (!user.bankAccountDetails || !user.bankAccountDetails.accountNumber) {
-      return res.status(400).json({ message: "No bank account details found to update." });
+      return res.status(400).json({status:false, message: "No bank account details found to update." });
     }
 
     const accountNumberRegex = /^\d{9,18}$/;
     const ifscCodeRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 
     if (!accountNumberRegex.test(accountNumber)) {
-      return res.status(400).json({ message: "Invalid account number. Must be between 9 and 18 digits." });
+      return res.status(400).json({ status:false,message: "Invalid account number. Must be between 9 and 18 digits." });
     }
     if (!ifscCodeRegex.test(ifscCode)) {
-      return res.status(400).json({ message: "Invalid IFSC code. Must follow the format 'ABCD0000123'." });
+      return res.status(400).json({  status:false,message: "Invalid IFSC code. Must follow the format 'ABCD0000123'." });
     }
     if (!["checking", "savings", "business"].includes(accountType)) {
-      return res.status(400).json({ message: "Invalid account type. Must be 'checking', 'savings', or 'business'." });
+      return res.status(400).json({ status:false, message: "Invalid account type. Must be 'checking', 'savings', or 'business'." });
     }
 
     if (
@@ -106,7 +104,7 @@ export const updateAccount = async (req, res) => {
       user.bankAccountDetails.bankName === bankName &&
       user.bankAccountDetails.accountType === accountType
     ) {
-      return res.status(400).json({ message: "You already have this account details. Please enter new account details." });
+      return res.status(400).json({  status:false,message: "You already have this account details. Please enter new account details." });
     }
 
     const existingUser = await User.findOne({ 
@@ -115,7 +113,7 @@ export const updateAccount = async (req, res) => {
     });
 
     if (existingUser && existingUser._id.toString() !== userId) {
-      return res.status(400).json({ message: "This combination of account number and IFSC code already exists for another user." });
+      return res.status(400).json({ status:false, message: "This combination of account number and IFSC code already exists for another user." });
     }
 
 
@@ -129,11 +127,11 @@ export const updateAccount = async (req, res) => {
 
     await user.save();
 
-    return res.status(200).json({ message: "Bank details updated successfully", user });
+    return res.status(200).json({  status:true,message: "Bank details updated successfully", user });
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({  status:false,message: "Internal server error" });
   }
 };
 
@@ -254,5 +252,28 @@ export const fetchTransactions = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+
+
+export const getBankDetails = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ status:false,message: "User not found" });
+    }
+
+    if (!user.bankAccountDetails || !user.bankAccountDetails.accountNumber) {
+      return res.status(404).json({ status:true,message: "No bank account details found." });
+    }
+
+    return res.status(200).json({ message: "Bank account details retrieved successfully", bankAccountDetails: user.bankAccountDetails });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ status:false,message: "Internal server error" });
   }
 };
