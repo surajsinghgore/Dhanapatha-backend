@@ -342,8 +342,7 @@ export const getTransactionsByReceiverEmail = async (req, res) => {
   try {
     const { email } = req.query;
 
-    // Find the receiver's user ID by email
-    const receiver = await User.findOne({ email });
+       const receiver = await User.findOne({ email });
 
     if (!receiver) {
       return res.status(404).json({ message: "Receiver not found." });
