@@ -8,10 +8,10 @@ const UserSchema = new Schema({
   balance: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
   bankAccountDetails: {
-    accountHolderName: { type: String, required: true },
+    accountHolderName: { type: String },
     accountNumber: { 
       type: String, 
-      required: true,
+    
       validate: {
         validator: function(v) {
             return /^\d{9,18}$/.test(v); // Allow 9 to 18 digits
@@ -21,7 +21,7 @@ const UserSchema = new Schema({
     },
     ifscCode: { 
         type: String, 
-        required: true,
+   
         validate: {
             validator: function(v) {
                 return /^[A-Z]{4}0[A-Z0-9]{6}$/.test(v); // Validate IFSC code format
@@ -29,11 +29,11 @@ const UserSchema = new Schema({
             message: props => `${props.value} is not a valid IFSC code! It must follow the format 'ABCD0000123'.`
         }
     },
-    bankName: { type: String, required: true },
+    bankName: { type: String},
     accountType: { 
       type: String, 
       enum: ['checking', 'savings', 'business'], 
-      required: true 
+     
     }
   }
 });
