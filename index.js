@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { DbConnection } from "./db/DbConnection.js";
+import {DbConnection} from "./db/DbConnection.js";
 import { app } from "./app.js"; 
 
 const server = express(); 
@@ -13,16 +13,16 @@ const corsOptions = {
 };
 
 server.use(cors(corsOptions));
+
 server.use(app); 
 
-// Connect to the database
 DbConnection()
   .then(() => {
-    console.log("⚙️ MongoDB connection established.");
+    const PORT = process.env.PORT || 8000;
+    server.listen(PORT, () => {
+      console.log(`⚙️ Server is running at port : ${PORT}`);
+    });
   })
   .catch((err) => {
-    console.error("MongoDB connection failed:", err);
+    console.log("MONGO db connection failed !!! ", err);
   });
-
-// Export the server as a serverless function
-export default server;
