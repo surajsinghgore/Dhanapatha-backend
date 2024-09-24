@@ -1,6 +1,7 @@
 import { User } from "../models/User.model.js";
 import {Transaction} from "../models/Transaction.model.js"
 import AddMoney from "../models/AddMoney.model.js"
+import { formatDateTime } from "../handlers/handler.js";
 
 
 
@@ -275,5 +276,113 @@ export const getBankDetails = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ status:false,message: "Internal server error" });
+  }
+};
+
+
+
+export const uniqueReceivers = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Use aggregation to group by receiverId and get unique receivers
+    const transactions = await Transaction.aggregate([
+      {
+        $match: {
+          senderId: userId,
+          receiverId: { $ne: userId } // Ensure the receiver is not the same as the sender
+        }
+      },
+      {
+        $group: {
+          _id: '$receiverId', // Group by receiverId
+          lastTransaction: { $max: '$createdAt' }, // Get the latest transaction date
+          amount: { $first: '$amount' }, // Get the amount (you can adjust this based on your needs)
+          status: { $first: '$status' }, // Get the status (you can adjust this based on your needs)
+        }
+      },
+      {
+        $lookup: {
+          from: 'users', // The collection name for users
+          localField: '_id',
+          foreignField: '_id',
+          as: 'receiverDetails'
+        }
+      },
+      {
+        $unwind: '$receiverDetails' 
+      },
+      {
+        $project: {
+          _id: 0,
+          receiverId: '$_id',
+          username: '$receiverDetails.username',
+          email: '$receiverDetails.email',
+          lastTransaction: 1,
+          amount: 1,
+          status: 1
+        }
+      },
+      {
+        $sort: { lastTransaction: -1 }
+      }
+    ]);
+
+    return res.status(200).json({ receivers: transactions });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+
+
+export const getTransactionsByReceiverEmail = async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    // Find the receiver's user ID by email
+    const receiver = await User.findOne({ email });
+
+    if (!receiver) {
+      return res.status(404).json({ message: "Receiver not found." });
+    }
+
+    const transactions = await Transaction.find({
+      $or: [
+        { receiverId: receiver._id },  
+        { senderId: receiver._id }      
+      ]
+    }).sort({ createdAt: 1 }); 
+
+
+    const groupedTransactions = transactions.reduce((acc, transaction) => {
+      const formattedDate = formatDateTime(transaction.createdAt).split(",")[0]; 
+      const formattedTime = formatDateTime(transaction.createdAt).split(",")[1].trim(); 
+      if (!acc[formattedDate]) {
+        acc[formattedDate] = [];
+      }
+      acc[formattedDate].push({
+        transactionId: transaction.transactionId,
+        senderId: transaction.senderId,
+        receiverId: transaction.receiverId,
+        amount: transaction.amount,
+        status: transaction.status,
+        date: formattedDate,
+        time: formattedTime,
+      });
+      return acc;
+    }, {});
+
+    const formattedResponse = Object.entries(groupedTransactions).map(([date, trans]) => ({
+      date,
+      transactions: trans,
+    }));
+
+    return res.status(200).json({ transactions: formattedResponse });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };

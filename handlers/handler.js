@@ -59,3 +59,11 @@ export const loginUserHandler = async (usernameOrEmail, password) => {
 
   return { user, token };
 };
+
+
+
+
+export const formatDateTime = (date) => {
+    const options = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    return new Date(date).toLocaleString('en-GB', options); // Format to DD-MM-YYYY HH:MM:SS
+  };
