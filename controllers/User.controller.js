@@ -57,3 +57,30 @@ export const loginUser = async (req, res) => {
         return res.status(400).json({ success: false, message: error.message });
     }
 };
+
+export const searchUsers = async (req, res) => {
+    try {
+      const { searchterm } = req.query;
+  
+      const userId = req.user._id;
+  
+      let query = { _id: { $ne: userId } }; 
+  
+    
+      if (searchterm) {
+        query = {
+          ...query, 
+          $or: [
+            { username: { $regex: searchterm, $options: 'i' } }, 
+            { email: { $regex: searchterm, $options: 'i' } } 
+          ]
+        };
+      }
+  
+      const users = await User.find(query, 'username email').sort({ createdAt: -1 }).limit(10);
+      return res.status(200).json({ users });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  };
