@@ -90,6 +90,7 @@ export const getUserHistory = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    // Fetch transactions where user is either sender or receiver
     const transactions = await Transaction.find({
       $or: [{ senderId: userId }, { receiverId: userId }]
     })
@@ -98,18 +99,22 @@ export const getUserHistory = async (req, res) => {
       .populate('receiverId', 'username email')
       .lean();
 
+    // Fetch refunds associated with the user's transactions
     const refunds = await Refund.find({
       transactionId: { $in: transactions.map(tx => tx._id) }
     })
       .sort({ createdAt: -1 })
       .lean();
 
+    // Fetch add money records for the user
     const addMoneyRecords = await AddMoney.find({ userId })
       .sort({ createdAt: -1 })
       .lean();
 
+    // Initialize an object to group history by date
     const groupedHistory = {};
 
+    // Function to format date as 'DD/MM/YYYY'
     const formatDate = (date) => {
       const d = new Date(date);
       const day = String(d.getDate()).padStart(2, '0');
@@ -118,6 +123,7 @@ export const getUserHistory = async (req, res) => {
       return `${day}/${month}/${year}`;
     };
 
+    // Process transactions and group them by date
     transactions.forEach(transaction => {
       const date = formatDate(transaction.createdAt);
       if (!groupedHistory[date]) {
@@ -139,11 +145,13 @@ export const getUserHistory = async (req, res) => {
       });
     });
 
+    // Process refunds and include relevant details
     refunds.forEach(refund => {
       const date = formatDate(refund.createdAt);
       if (!groupedHistory[date]) {
         groupedHistory[date] = [];
       }
+      const transaction = transactions.find(tx => tx._id.toString() === refund.transactionId.toString());
       groupedHistory[date].push({
         type: 'refund',
         transactionId: refund.transactionId,
@@ -152,9 +160,18 @@ export const getUserHistory = async (req, res) => {
         receiverReceived: refund.receiverReceived,
         adminReceived: refund.adminReceived,
         createdAt: refund.createdAt,
+        sender: transaction ? {
+          username: transaction.senderId.username,
+          email: transaction.senderId.email,
+        } : null,
+        receiver: transaction ? {
+          username: transaction.receiverId.username,
+          email: transaction.receiverId.email,
+        } : null,
       });
     });
 
+    // Process add money records and group them by date
     addMoneyRecords.forEach(record => {
       const date = formatDate(record.createdAt);
       if (!groupedHistory[date]) {
@@ -167,20 +184,24 @@ export const getUserHistory = async (req, res) => {
       });
     });
 
+    // Transform the grouped history object into an array format
     const historyByDate = Object.keys(groupedHistory).map(date => ({
       date,
       allData: groupedHistory[date]
     }));
 
+    // Sort the history by date in descending order
     historyByDate.sort((a, b) => {
       const dateA = new Date(a.date.split('/').reverse().join('/')); // Convert 'DD/MM/YYYY' to 'YYYY/MM/DD'
       const dateB = new Date(b.date.split('/').reverse().join('/'));
       return dateB - dateA;
     });
 
+    // Return the structured response
     res.status(200).json({ success: true, history: historyByDate });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
