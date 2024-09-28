@@ -209,7 +209,6 @@ export const fetchTransactions = async (req, res) => {
   try {
     const userId = req.user._id;
 
-
     const transactions = await Transaction.find({
       $or: [
         { senderId: userId },
@@ -217,23 +216,26 @@ export const fetchTransactions = async (req, res) => {
       ]
     })
     .sort({ createdAt: -1 })
-    .populate('receiverId', 'username email')
+    .populate('senderId', 'username email') 
+    .populate('receiverId', 'username email')  
     .exec();
 
 
-    const addMoneyTransactions = await AddMoney.find({  userId })
+    const addMoneyTransactions = await AddMoney.find({ userId })
       .sort({ createdAt: -1 })
       .exec();
 
-
+ 
     const formattedTransactions = transactions.map(transaction => ({
       transactionId: transaction.transactionId,
       amount: transaction.amount,
       type: 'Transfer', 
+      senderUsername: transaction.senderId.username, 
       receiver: transaction.receiverId, 
       status: transaction.status,
       createdAt: transaction.createdAt
     }));
+
 
     const formattedAddMoneyTransactions = addMoneyTransactions.map(addMoney => ({
       transactionId: addMoney.transactionId,
@@ -243,10 +245,7 @@ export const fetchTransactions = async (req, res) => {
       createdAt: addMoney.createdAt
     }));
 
-
     const allTransactions = [...formattedTransactions, ...formattedAddMoneyTransactions];
-
-  
     allTransactions.sort((a, b) => b.createdAt - a.createdAt);
 
     res.status(200).json({ success: true, transactions: allTransactions });
