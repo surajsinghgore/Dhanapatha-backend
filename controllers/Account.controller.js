@@ -363,7 +363,7 @@ export const getTransactionsByReceiverEmail = async (req, res) => {
         acc[formattedDate] = [];
       }
       acc[formattedDate].push({
-        transactionId: transaction.transactionId,
+        transactionId: transaction._id,
         senderId: transaction.senderId,
         receiverId: transaction.receiverId,
         amount: transaction.amount,
