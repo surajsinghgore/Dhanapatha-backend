@@ -158,13 +158,14 @@ return res.status(200).json({ success: true, data:balance });
 };
 
 
-
 export const transferMoney = async (req, res) => {
   try {
     const { receiverEmail, amount } = req.body;
     const senderId = req.user._id;
 
-    if (!amount || amount <= 0) {
+    const amountInt = parseInt(amount, 10); 
+
+    if (!amountInt || amountInt <= 0) {
       return res.status(400).json({ success: false, message: 'Amount must be a positive number' });
     }
     if (!receiverEmail) {
@@ -182,18 +183,18 @@ export const transferMoney = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Sender not found' });
     }
 
-    if (sender.balance < amount) {
+    if (sender.balance < amountInt) {
       return res.status(400).json({ success: false, message: 'Insufficient balance' });
     }
 
     const transaction = await Transaction.create({
       senderId: sender._id,
       receiverId: receiver._id,
-      amount,
+      amount: amountInt, // Use the converted integer amount
     });
 
-    await sender.deductBalance(amount);
-    await receiver.incrementBalance(amount);
+    await sender.deductBalance(amountInt); // Use the converted integer amount
+    await receiver.incrementBalance(amountInt); // Use the converted integer amount
 
     res.status(200).json({ success: true, message: 'Transfer successful', transaction, status: transaction.status });
   } catch (error) {
@@ -201,7 +202,6 @@ export const transferMoney = async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
-
 
 
 
