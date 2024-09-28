@@ -41,7 +41,7 @@ export const addMoney = async (req, res) => {
     const paymentStatus = status === "succeeded" ? "completed" : "failed";
 
     const addMoneyEntry = new AddMoney({
-      user: _id,
+      userId: _id,
       amount,
       status: paymentStatus,
       transactionId,
