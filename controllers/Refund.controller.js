@@ -81,7 +81,6 @@ export const refundTransaction = async (req, res) => {
 
 
 
-
 export const getUserHistory = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -91,13 +90,12 @@ export const getUserHistory = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Fetch transactions where user is either sender or receiver, and populate sender and receiver details
     const transactions = await Transaction.find({
       $or: [{ senderId: userId }, { receiverId: userId }]
     })
       .sort({ createdAt: -1 })
       .populate('senderId', 'username email') 
-      .populate('receiverId', 'username email') 
+      .populate('receiverId', 'username email')
       .lean();
 
     const refunds = await Refund.find({
@@ -110,10 +108,22 @@ export const getUserHistory = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    const history = [];
+    const groupedHistory = {};
+
+    const formatDate = (date) => {
+      const d = new Date(date);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
 
     transactions.forEach(transaction => {
-      history.push({
+      const date = formatDate(transaction.createdAt);
+      if (!groupedHistory[date]) {
+        groupedHistory[date] = [];
+      }
+      groupedHistory[date].push({
         type: 'transaction',
         transactionId: transaction._id,
         amount: transaction.amount,
@@ -130,7 +140,11 @@ export const getUserHistory = async (req, res) => {
     });
 
     refunds.forEach(refund => {
-      history.push({
+      const date = formatDate(refund.createdAt);
+      if (!groupedHistory[date]) {
+        groupedHistory[date] = [];
+      }
+      groupedHistory[date].push({
         type: 'refund',
         transactionId: refund.transactionId,
         amount: refund.amount,
@@ -142,16 +156,29 @@ export const getUserHistory = async (req, res) => {
     });
 
     addMoneyRecords.forEach(record => {
-      history.push({
+      const date = formatDate(record.createdAt);
+      if (!groupedHistory[date]) {
+        groupedHistory[date] = [];
+      }
+      groupedHistory[date].push({
         type: 'addMoney',
         amount: record.amount,
         createdAt: record.createdAt,
       });
     });
 
-    history.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const historyByDate = Object.keys(groupedHistory).map(date => ({
+      date,
+      allData: groupedHistory[date]
+    }));
 
-    res.status(200).json({ success: true, history });
+    historyByDate.sort((a, b) => {
+      const dateA = new Date(a.date.split('/').reverse().join('/')); // Convert 'DD/MM/YYYY' to 'YYYY/MM/DD'
+      const dateB = new Date(b.date.split('/').reverse().join('/'));
+      return dateB - dateA;
+    });
+
+    res.status(200).json({ success: true, history: historyByDate });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Internal server error" });
