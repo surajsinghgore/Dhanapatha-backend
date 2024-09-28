@@ -111,8 +111,8 @@ export const getUserHistory = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // Initialize an object to group history by date
-    const groupedHistory = {};
+    // Initialize an array to combine all records
+    const combinedHistory = [];
 
     // Function to format date as 'DD/MM/YYYY'
     const formatDate = (date) => {
@@ -123,13 +123,9 @@ export const getUserHistory = async (req, res) => {
       return `${day}/${month}/${year}`;
     };
 
-    // Process transactions and group them by date
+    // Add transactions to combined history
     transactions.forEach(transaction => {
-      const date = formatDate(transaction.createdAt);
-      if (!groupedHistory[date]) {
-        groupedHistory[date] = [];
-      }
-      groupedHistory[date].push({
+      combinedHistory.push({
         type: 'transaction',
         transactionId: transaction._id,
         amount: transaction.amount,
@@ -145,14 +141,10 @@ export const getUserHistory = async (req, res) => {
       });
     });
 
-    // Process refunds and include relevant details
+    // Add refunds to combined history
     refunds.forEach(refund => {
-      const date = formatDate(refund.createdAt);
-      if (!groupedHistory[date]) {
-        groupedHistory[date] = [];
-      }
       const transaction = transactions.find(tx => tx._id.toString() === refund.transactionId.toString());
-      groupedHistory[date].push({
+      combinedHistory.push({
         type: 'refund',
         transactionId: refund.transactionId,
         amount: refund.amount,
@@ -171,17 +163,26 @@ export const getUserHistory = async (req, res) => {
       });
     });
 
-    // Process add money records and group them by date
+    // Add add money records to combined history
     addMoneyRecords.forEach(record => {
-      const date = formatDate(record.createdAt);
-      if (!groupedHistory[date]) {
-        groupedHistory[date] = [];
-      }
-      groupedHistory[date].push({
+      combinedHistory.push({
         type: 'addMoney',
         amount: record.amount,
         createdAt: record.createdAt,
       });
+    });
+
+    // Sort the combined history by createdAt in descending order
+    combinedHistory.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Group the combined history by date
+    const groupedHistory = {};
+    combinedHistory.forEach(item => {
+      const date = formatDate(item.createdAt);
+      if (!groupedHistory[date]) {
+        groupedHistory[date] = [];
+      }
+      groupedHistory[date].push(item);
     });
 
     // Transform the grouped history object into an array format
