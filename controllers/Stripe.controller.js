@@ -125,7 +125,6 @@ export const getWithdrawalSummary = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Aggregating both withdrawal and add money transactions
     const transactionSummary = await Withdrawal.aggregate([
       {
         $match: {
@@ -137,12 +136,12 @@ export const getWithdrawalSummary = async (req, res) => {
           amount: "$amount",
           status: "$status",
           createdAt: "$createdAt",
-          type: { $literal: "withdrawal" }, // Indicate that this is a withdrawal transaction
+          type: { $literal: "withdrawal" }, 
         },
       },
       {
         $unionWith: {
-          coll: "addmoneys", // Collection name for wallet add transactions
+          coll: "addmoneys", 
           pipeline: [
             {
               $match: {
@@ -154,25 +153,30 @@ export const getWithdrawalSummary = async (req, res) => {
                 amount: "$amount",
                 status: "$status",
                 createdAt: "$createdAt",
-                type: { $literal: "addMoney" }, // Indicate that this is an add money transaction
+                type: { $literal: "addMoney" },
               },
             },
           ],
         },
       },
       {
+        $sort: {
+          createdAt: -1, 
+        },
+      },
+      {
         $group: {
           _id: {
-            $dateToString: { format: "%d/%m/%Y", date: "$createdAt" }, // Group by formatted date
+            $dateToString: { format: "%d/%m/%Y", date: "$createdAt" }, 
           },
-          totalAmount: { $sum: "$amount" }, // Sum the transaction amounts
-          count: { $sum: 1 }, // Count the number of transactions
-          records: { $push: "$$ROOT" }, // Collect the actual transaction records
+          totalAmount: { $sum: "$amount" }, 
+          count: { $sum: 1 },
+          records: { $push: "$$ROOT" }, 
         },
       },
       {
         $sort: {
-          _id: -1, // Sort by date in descending order
+          _id: -1,
         },
       },
     ]);
