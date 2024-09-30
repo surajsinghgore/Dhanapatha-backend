@@ -118,15 +118,43 @@ export const withdrawMoney = async (req, res) => {
   }
 };
 
-
 export const getWithdrawalSummary = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const withdrawalSummary = await Withdrawal.aggregate([
+    // Aggregating both withdrawal and add money transactions
+    const transactionSummary = await Withdrawal.aggregate([
       {
         $match: {
-          userId:  new mongoose.Types.ObjectId(userId),
+          userId: new mongoose.Types.ObjectId(userId),
+        },
+      },
+      {
+        $project: {
+          amount: "$amount",
+          status: "$status",
+          createdAt: "$createdAt",
+          type: { $literal: "withdrawal" }, // Indicate that this is a withdrawal transaction
+        },
+      },
+      {
+        $unionWith: {
+          coll: "addmoneys", // Collection name for wallet add transactions
+          pipeline: [
+            {
+              $match: {
+                userId: new mongoose.Types.ObjectId(userId),
+              },
+            },
+            {
+              $project: {
+                amount: "$amount",
+                status: "$status",
+                createdAt: "$createdAt",
+                type: { $literal: "addMoney" }, // Indicate that this is an add money transaction
+              },
+            },
+          ],
         },
       },
       {
@@ -134,9 +162,9 @@ export const getWithdrawalSummary = async (req, res) => {
           _id: {
             $dateToString: { format: "%d/%m/%Y", date: "$createdAt" }, // Group by formatted date
           },
-          totalAmount: { $sum: "$amount" }, // Sum the withdrawal amounts
-          count: { $sum: 1 }, // Count the number of withdrawals
-          records: { $push: "$$ROOT" } // Collect the actual withdrawal records
+          totalAmount: { $sum: "$amount" }, // Sum the transaction amounts
+          count: { $sum: 1 }, // Count the number of transactions
+          records: { $push: "$$ROOT" }, // Collect the actual transaction records
         },
       },
       {
@@ -146,17 +174,17 @@ export const getWithdrawalSummary = async (req, res) => {
       },
     ]);
 
-    if (!withdrawalSummary.length) {
+    if (!transactionSummary.length) {
       return res.status(404).json({
         success: false,
-        message: "No withdrawal history found",
+        message: "No transaction history found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Withdrawal summary retrieved successfully",
-      withdrawalSummary,
+      message: "Transaction summary retrieved successfully",
+      transactionSummary,
     });
   } catch (error) {
     console.error(error);
