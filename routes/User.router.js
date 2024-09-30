@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {  loginUser, RegisterUser, searchUsers } from "../controllers/User.controller.js";
+import {  changePassword, loginUser, RegisterUser, searchUsers } from "../controllers/User.controller.js";
 import { registerValidation } from "../validators/validation.js";
 import { validationResult } from 'express-validator';
 import { verifyUserToken } from "../middleware/VerifyUserLogin.middleware.js";
@@ -20,6 +20,7 @@ router.route("/register").post(registerValidation, (req, res, next) => {
 
 router.route("/login").post(loginUser)
 router.route("/search-user").get(verifyUserToken,searchUsers)
+router.route("/change-password").get(verifyUserToken,changePassword)
 
 
 
