@@ -14,11 +14,14 @@ export const createPaymentIntent = async (req, res) => {
     let _id = req.user._id;
     let email = req.user.email;
 
-    if (amount < 41) {
-      return res.status(400).json({status:false, message: "Amount must be at least ₹41.00." });
+  
+    if (amount < 45) {
+      return res.status(400).json({ status: false, message: "Amount must be at least ₹45.00." });
     }
+
+  
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount * 100,
+      amount: amount * 100, 
       currency: "inr",
       metadata: {
         userId: _id.toString(),
@@ -26,10 +29,10 @@ export const createPaymentIntent = async (req, res) => {
       },
     });
 
-    res.json({status:success, clientSecret: paymentIntent.client_secret });
+    res.json({ status: true, clientSecret: paymentIntent.client_secret });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ status:false,message: error.message });
+    res.status(500).json({ status: false, message: error.message });
   }
 };
 
