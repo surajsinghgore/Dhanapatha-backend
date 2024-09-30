@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import AddMoney from "../models/AddMoney.model.js";
 import { User } from "../models/User.model.js";
-
 import Stripe from "stripe";
 import { Withdrawal } from "../models/Withdrawal.model.js";
 const stripe = new Stripe(process.env.stipe_secret_key);
@@ -120,6 +119,53 @@ export const withdrawMoney = async (req, res) => {
 };
 
 
+export const getWithdrawalSummary = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const withdrawalSummary = await Withdrawal.aggregate([
+      {
+        $match: {
+          userId:  new mongoose.Types.ObjectId(userId),
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%d/%m/%Y", date: "$createdAt" }, // Group by formatted date
+          },
+          totalAmount: { $sum: "$amount" }, // Sum the withdrawal amounts
+          count: { $sum: 1 }, // Count the number of withdrawals
+          records: { $push: "$$ROOT" } // Collect the actual withdrawal records
+        },
+      },
+      {
+        $sort: {
+          _id: -1, // Sort by date in descending order
+        },
+      },
+    ]);
+
+    if (!withdrawalSummary.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No withdrawal history found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Withdrawal summary retrieved successfully",
+      withdrawalSummary,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
 // bankAccountDetails: {
 //   accountHolderName,
 //   accountNumber,
