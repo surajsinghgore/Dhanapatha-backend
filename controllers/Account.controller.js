@@ -267,7 +267,7 @@ export const getBankDetails = async (req, res) => {
     }
 
     if (!user.bankAccountDetails || !user.bankAccountDetails.accountNumber) {
-      return res.status(404).json({ status:true,message: "No bank account details found." });
+      return res.status(200).json({ status:true,message: "No bank account details found." });
     }
 
     return res.status(200).json({ message: "Bank account details retrieved successfully", bankAccountDetails: user.bankAccountDetails });
