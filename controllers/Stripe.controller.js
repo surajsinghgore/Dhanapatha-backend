@@ -10,18 +10,18 @@ const stripe = new Stripe(process.env.stipe_secret_key);
 
 export const createPaymentIntent = async (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount } = req.body; 
     let _id = req.user._id;
     let email = req.user.email;
 
-  
-    if (amount < 45) {
+    const smallestUnitAmount = amount * 100;
+
+    if (smallestUnitAmount < 4500) {
       return res.status(400).json({ status: false, message: "Amount must be at least ₹45.00." });
     }
 
-  
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount * 100, 
+      amount: smallestUnitAmount, 
       currency: "inr",
       metadata: {
         userId: _id.toString(),
