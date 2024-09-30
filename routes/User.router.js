@@ -20,7 +20,7 @@ router.route("/register").post(registerValidation, (req, res, next) => {
 
 router.route("/login").post(loginUser)
 router.route("/search-user").get(verifyUserToken,searchUsers)
-router.route("/change-password").get(verifyUserToken,changePassword)
+router.route("/change-password").post(verifyUserToken,changePassword)
 
 
 
