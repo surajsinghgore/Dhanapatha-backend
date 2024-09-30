@@ -11,8 +11,8 @@ const stripe = new Stripe(process.env.stipe_secret_key);
 export const createPaymentIntent = async (req, res) => {
   try {
     const { amount } = req.body; 
-    let _id = req.user._id;
-    let email = req.user.email;
+    const userId = req.user._id; 
+    const email = req.user.email; 
 
     const smallestUnitAmount = amount * 100;
 
@@ -24,27 +24,27 @@ export const createPaymentIntent = async (req, res) => {
       amount: smallestUnitAmount, 
       currency: "inr",
       metadata: {
-        userId: _id.toString(),
+        userId: userId.toString(),
         email,
       },
     });
 
     res.json({ status: true, clientSecret: paymentIntent.client_secret });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ status: false, message: error.message });
+    console.error("Error creating payment intent:", error); 
+    res.status(500).json({ status: false, message: "Internal server error." });
   }
 };
 
 export const addMoney = async (req, res) => {
   try {
     const { amount, transactionId, paymentMethod, status } = req.body;
-    let { _id } = req.user._id;
+    const userId = req.user._id; 
     const paymentStatus = status === "succeeded" ? "completed" : "failed";
 
     const addMoneyEntry = new AddMoney({
-      userId: _id,
-      amount,
+      userId,
+      amount, 
       status: paymentStatus,
       transactionId,
       paymentMethod,
@@ -52,8 +52,8 @@ export const addMoney = async (req, res) => {
 
     await addMoneyEntry.save();
     if (paymentStatus === "completed") {
-      await User.findByIdAndUpdate(_id, {
-        $inc: { balance: amount },
+      await User.findByIdAndUpdate(userId, {
+        $inc: { balance: amount }, 
       });
     }
 
