@@ -73,69 +73,68 @@ export const addAccount = async (req, res) => {
 export const updateAccount = async (req, res) => {
   try {
     const { accountHolderName, accountNumber, ifscCode, bankName, accountType } = req.body;
-
     const userId = req.user._id;
 
+    // Find the user
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({status:false, message: "User not found" });
+      return res.status(404).json({ status: false, message: "User not found" });
     }
 
+    // Ensure that user already has bank account details to update
     if (!user.bankAccountDetails || !user.bankAccountDetails.accountNumber) {
-      return res.status(400).json({status:false, message: "No bank account details found to update." });
+      return res.status(400).json({ status: false, message: "No bank account details found to update." });
     }
 
+    // Validate input formats
     const accountNumberRegex = /^\d{9,18}$/;
     const ifscCodeRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 
-    if (!accountNumberRegex.test(accountNumber)) {
-      return res.status(400).json({ status:false,message: "Invalid account number. Must be between 9 and 18 digits." });
+    if (accountNumber && !accountNumberRegex.test(accountNumber)) {
+      return res.status(400).json({ status: false, message: "Invalid account number. Must be between 9 and 18 digits." });
     }
-    if (!ifscCodeRegex.test(ifscCode)) {
-      return res.status(400).json({  status:false,message: "Invalid IFSC code. Must follow the format 'ABCD0000123'." });
+    if (ifscCode && !ifscCodeRegex.test(ifscCode)) {
+      return res.status(400).json({ status: false, message: "Invalid IFSC code. Must follow the format 'ABCD0000123'." });
     }
-    if (!["checking", "savings", "business"].includes(accountType)) {
-      return res.status(400).json({ status:false, message: "Invalid account type. Must be 'checking', 'savings', or 'business'." });
+    if (accountType && !["checking", "savings", "business"].includes(accountType)) {
+      return res.status(400).json({ status: false, message: "Invalid account type. Must be 'checking', 'savings', or 'business'." });
     }
 
+    // Check if the account number and IFSC code are being updated, only then check for duplicates
     if (
-      user.bankAccountDetails.accountHolderName === accountHolderName &&
-      user.bankAccountDetails.accountNumber === accountNumber &&
-      user.bankAccountDetails.ifscCode === ifscCode &&
-      user.bankAccountDetails.bankName === bankName &&
-      user.bankAccountDetails.accountType === accountType
+      (accountNumber && accountNumber !== user.bankAccountDetails.accountNumber) ||
+      (ifscCode && ifscCode !== user.bankAccountDetails.ifscCode)
     ) {
-      return res.status(400).json({  status:false,message: "You already have this account details. Please enter new account details." });
+      const existingUser = await User.findOne({
+        "bankAccountDetails.accountNumber": accountNumber,
+        "bankAccountDetails.ifscCode": ifscCode
+      });
+
+      if (existingUser && existingUser._id.toString() !== userId) {
+        return res.status(400).json({
+          status: false,
+          message: "This combination of account number and IFSC code already exists for another user."
+        });
+      }
     }
 
-    const existingUser = await User.findOne({ 
-      "bankAccountDetails.accountNumber": accountNumber, 
-      "bankAccountDetails.ifscCode": ifscCode 
-    });
+    // Update only the fields that are actually being modified
+    user.bankAccountDetails.accountHolderName = accountHolderName || user.bankAccountDetails.accountHolderName;
+    user.bankAccountDetails.accountNumber = accountNumber || user.bankAccountDetails.accountNumber;
+    user.bankAccountDetails.ifscCode = ifscCode || user.bankAccountDetails.ifscCode;
+    user.bankAccountDetails.bankName = bankName || user.bankAccountDetails.bankName;
+    user.bankAccountDetails.accountType = accountType || user.bankAccountDetails.accountType;
 
-    if (existingUser && existingUser._id.toString() !== userId) {
-      return res.status(400).json({ status:false, message: "This combination of account number and IFSC code already exists for another user." });
-    }
-
-
-    user.bankAccountDetails = {
-      accountHolderName,
-      accountNumber,
-      ifscCode,
-      bankName,
-      accountType
-    };
-
+    // Save the updated user
     await user.save();
 
-    return res.status(200).json({  status:true,message: "Bank details updated successfully", user });
+    return res.status(200).json({ status: true, message: "Bank details updated successfully", user });
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({  status:false,message: "Internal server error" });
+    return res.status(500).json({ status: false, message: "Internal server error" });
   }
 };
-
 
 
 export const fetchAccountBalance = async (req, res) => {
