@@ -11,8 +11,8 @@ const stripe = new Stripe(process.env.stipe_secret_key);
 export const createPaymentIntent = async (req, res) => {
   try {
     const { amount } = req.body;
-    let _id = new mongoose.Types.ObjectId("66f12a57da8f9ada854f6677");
-    let email = "surajthakurrs45@gmail.com";
+    let _id = req.user._id;
+    let email = req.user.email;
 
     if (amount < 41) {
       return res.status(400).json({ error: "Amount must be at least ₹41.00." });
@@ -36,7 +36,7 @@ export const createPaymentIntent = async (req, res) => {
 export const addMoney = async (req, res) => {
   try {
     const { amount, transactionId, paymentMethod, status } = req.body;
-    let { _id } = new mongoose.Types.ObjectId("66f12a57da8f9ada854f6677");
+    let { _id } = req.user._id;
     const paymentStatus = status === "succeeded" ? "completed" : "failed";
 
     const addMoneyEntry = new AddMoney({

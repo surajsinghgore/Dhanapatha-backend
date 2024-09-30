@@ -4,8 +4,8 @@ import { addMoney, createPaymentIntent, getWithdrawalSummary, withdrawMoney } fr
 
 const router = Router();
 
-router.route("/add-money").post(addMoney)
-router.route("/create-payment-intent").post(createPaymentIntent)
+router.route("/add-money").post(verifyUserToken,addMoney)
+router.route("/create-payment-intent").post(verifyUserToken,createPaymentIntent)
 router.route("/withdraw-money").post(verifyUserToken,withdrawMoney)
 router.route("/withdraw-money").get(verifyUserToken,getWithdrawalSummary)
 
