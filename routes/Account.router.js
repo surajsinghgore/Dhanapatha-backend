@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {  addAccount, fetchAccountBalance, fetchTransactions, getBankDetails, getTransactionsByReceiverEmail, transferMoney, uniqueReceivers, updateAccount } from "../controllers/Account.controller.js";
+import {  addAccount, fetchAccountBalance, fetchTransactions, getBankDetails, getReceiverData, getSenderData, getTransactionsByReceiverEmail, transferMoney, uniqueReceivers, updateAccount } from "../controllers/Account.controller.js";
 import { verifyUserToken } from "../middleware/VerifyUserLogin.middleware.js";
 
 
@@ -16,6 +16,8 @@ router.route("/get-transaction").get(verifyUserToken,fetchTransactions)
 router.route("/get-bank").get(verifyUserToken,getBankDetails)
 router.route("/recent").get(verifyUserToken,uniqueReceivers)
 router.route("/fetch-transaction-receiver").get(verifyUserToken,getTransactionsByReceiverEmail)
+router.route("/fetch-sender-data").get(verifyUserToken,getSenderData)
+router.route("/fetch-receiver-data").get(verifyUserToken,getReceiverData)
 
 
 export default router;

@@ -383,3 +383,103 @@ export const getTransactionsByReceiverEmail = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
+export const getSenderData = async (req, res) => {
+  try {
+    const userId = req.user._id;  
+
+    const transactions = await Transaction.find({ senderId: userId })
+      .sort({ createdAt: -1 }) 
+      .populate('receiverId', 'username email') 
+      .exec();
+
+
+    const formatDate = (date) => {
+      const d = new Date(date);
+      const day = String(d.getDate()).padStart(2, '0');  
+      const month = String(d.getMonth() + 1).padStart(2, '0'); 
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+
+    const groupedTransactions = transactions.reduce((acc, tx) => {
+      const formattedDate = formatDate(tx.createdAt);
+
+
+      let dateGroup = acc.find(group => group.date === formattedDate);
+      if (!dateGroup) {
+  
+        dateGroup = { date: formattedDate, allData: [] };
+        acc.push(dateGroup);
+      }
+
+      dateGroup.allData.push({
+        _id: tx._id,
+        amount: tx.amount,
+        user: tx.receiverId, 
+        status: tx.status,
+        transactionId: tx.transactionId
+      });
+
+      return acc;
+    }, []);
+
+    res.status(200).json({
+      success: true,
+      transactions: groupedTransactions
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error fetching transactions" });
+  }
+};
+
+
+
+export const getReceiverData = async (req, res) => {
+  try {
+    const userId = req.user._id; 
+
+    const transactions = await Transaction.find({ receiverId: userId })
+      .sort({ createdAt: -1 }) 
+      .populate('senderId', 'username email')  
+      .exec();
+
+    const formatDate = (date) => {
+      const d = new Date(date);
+      const day = String(d.getDate()).padStart(2, '0');  
+      const month = String(d.getMonth() + 1).padStart(2, '0'); 
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+
+    const groupedTransactions = transactions.reduce((acc, tx) => {
+      const formattedDate = formatDate(tx.createdAt);
+
+      let dateGroup = acc.find(group => group.date === formattedDate);
+      if (!dateGroup) {
+        dateGroup = { date: formattedDate, allData: [] };
+        acc.push(dateGroup);
+      }
+
+      dateGroup.allData.push({
+        _id: tx._id,
+        amount: tx.amount,
+        user: tx.senderId, 
+        status: tx.status,
+        transactionId: tx.transactionId
+      });
+
+      return acc;
+    }, []);
+
+    res.status(200).json({
+      success: true,
+      transactions: groupedTransactions
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error fetching transactions" });
+  }
+};
