@@ -19,7 +19,6 @@ export const refundTransaction = async (req, res) => {
           return res.status(404).json({ success: false, message: "Transaction not found" });
       }
 
-      // Check if the user is the sender of the transaction
       if (transaction.senderId.toString() !== userId.toString()) {
           return res.status(403).json({ success: false, message: "This is not your payment, you cannot refund it" });
       }
@@ -42,10 +41,9 @@ export const refundTransaction = async (req, res) => {
       const sender = await User.findById(transaction.senderId);
       const receiver = await User.findById(transaction.receiverId);
 
-      // Update balances
-      sender.balance += senderRefundAmount; // Add 90% back to sender
-      receiver.balance -= refundAmount; // Deduct full amount from receiver
-      receiver.balance += receiverAmount; // Add 5% back to receiver
+      sender.balance += senderRefundAmount;
+      receiver.balance -= senderRefundAmount; 
+      receiver.balance += receiverAmount; 
 
       const admin = await Admin.findOne();
 
@@ -64,9 +62,9 @@ export const refundTransaction = async (req, res) => {
           await admin.save();
       }
 
-      // Update transaction status to "refunded"
+  
       transaction.status = "refunded";
-      await transaction.save(); // Save the updated transaction
+      await transaction.save();
 
       await sender.save();
       await receiver.save();
@@ -77,7 +75,6 @@ export const refundTransaction = async (req, res) => {
       res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
-
 
 
 
