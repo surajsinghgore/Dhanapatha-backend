@@ -7,7 +7,7 @@ import { app } from "./app.js";
 const server = express(); 
 
 const corsOptions = {
-  origin: "*",
+  origin: "https://dhanapatha.surajsingh.online",
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
 };
